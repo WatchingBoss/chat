@@ -2,6 +2,8 @@
 #include <string>
 #include <array>
 #include <queue>
+#include <algorithm>
+#include <ctime>
 
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -10,12 +12,13 @@
 #include "../common.hpp"
 
 #define SERVER_NAME "192.168.43.122"
+#define DELAY 1000
 
-using string_ptr   = boost::shared_ptr<std::string>;
-using mesQueue_ptr = boost::shared_ptr< std::queue<string_ptr> >;
+using string_ptr   = std::shared_ptr<std::string>;
+using mesQueue_ptr = std::shared_ptr< std::queue<string_ptr> >;
 
 /* GLOBAL VARIABLES */
-static system::error_code er_code;
+static boost::system::error_code er_code;
 static mesQueue_ptr mesQueue(new std::queue<string_ptr>);
 static bool RUN_CHAT = true;
 /* END GLOBAL VARIABLES */
@@ -28,7 +31,7 @@ sys_er(const char *er)
 }
 
 static void
-sys_er(system::error_code e_c)
+sys_er(boost::system::error_code e_c)
 {
 	std::cout << "Code: " << e_c << "=> " << e_c.message() << std::endl;
 	exit(EXIT_FAILURE);
@@ -45,6 +48,7 @@ getNick()
 	std::getline(std::cin, nick);
 	if(nick.empty())
 		sys_er("getPrompt: cannot save nick_name");
+	std::transform(nick.begin(), nick.end(), nick.begin(), ::tolower);
 	std::string *prompt = new std::string(nick);
 	return prompt;
 }
@@ -58,46 +62,53 @@ connect_socket(tcp::socket &socket, tcp::endpoint &ep)
 static void
 readFromSocket(tcp::socket *socket)
 {
-	constexpr size_t readSize = 1024;
+	constexpr size_t bufferSize = 1024;
 	std::size_t readBytes = 0;
-	char readBuffer[readSize] = {0};
 
 	while(RUN_CHAT)
 	{
 		EXCEPT_HANDLE(
 			if(socket->available(er_code))
 			{
-				readBytes = socket->read_some(asio::buffer(readBuffer), er_code);
+				char readBuffer[bufferSize] = {0};
+				readBytes = socket->read_some(boost::asio::buffer(readBuffer, bufferSize),
+											  er_code);
 				string_ptr mes(new std::string(readBuffer, readBytes));
 				mesQueue->push(mes);
 			} );
-		bzero(readBuffer, readSize);
-		this_thread::sleep(posix_time::millisec(1000));
+		boost::this_thread::sleep(boost::posix_time::millisec(DELAY));
 	}
+}
+
+static void
+addTime(std::string &input)
+{
+	char buf[15] = {0};
+	time_t c_time = time(NULL);
+	struct tm *c_time_info = localtime(&c_time);
+	strftime(buf, 10, "%H:%M:%S => ", c_time_info);
+	input = buf + input;
 }
 
 static void
 writeToSocket(tcp::socket *socket, string_ptr nickName)
 {
-	std::string userInput, inputBuffer;
-
 	while(RUN_CHAT)
 	{
+		std::string userInput, inputBuffer;
 		std::getline(std::cin, userInput);
+
+		inputBuffer = *nickName + ": " + userInput;
+		addTime(inputBuffer);
+
+		if(!inputBuffer.empty())
+			EXCEPT_HANDLE( socket->write_some(boost::asio::buffer(inputBuffer), er_code); );
 
 		if(userInput.find("exit") != std::string::npos)
 		{
 			std::cout << "Chat client terminated" << std::endl;
 			RUN_CHAT = false;
 		}
-
-		inputBuffer = *nickName + ": " + userInput + '\n';
-
-		if(!inputBuffer.empty())
-			EXCEPT_HANDLE( socket->write_some(asio::buffer(inputBuffer), er_code); );
-
-		userInput.clear();
-		inputBuffer.clear();
 	}
 }
 
@@ -118,28 +129,26 @@ displayChat(const string_ptr nick)
 		{
 			const string_ptr cur_mes = mesQueue->front();
 			if(!ownMes(cur_mes, nick))
-				std::cout << cur_mes << std::endl;
-			else
-				std::cout << "OWN->" << cur_mes << std::endl;
+				std::cout << *cur_mes << std::endl;
 
 			mesQueue->pop();
 		}
-		this_thread::sleep(posix_time::millisec(1000));
+		boost::this_thread::sleep(boost::posix_time::millisec(DELAY));
 	}
 }
 
 int main()
 {
 	boost::thread_group threads;
-	asio::io_context io;
+	boost::asio::io_context io;
 
 	string_ptr nickName(getNick());
 
-	tcp::endpoint endpoint(asio::ip::address::from_string(SERVER_NAME), PORT_NUM);
+	tcp::endpoint endpoint(boost::asio::ip::address::from_string(SERVER_NAME), PORT_NUM);
 
 	tcp::socket socket(io);
 	connect_socket(socket, endpoint);
-	std::cout << "Welcome, " << nickName << ", to chat" << std::endl;
+	std::cout << "Welcome, " << *nickName << ", to chat" << std::endl;
 
 	threads.create_thread(boost::bind(readFromSocket, &socket));
 	threads.create_thread(boost::bind(writeToSocket, &socket, nickName));

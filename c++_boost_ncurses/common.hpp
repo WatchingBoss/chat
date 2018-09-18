@@ -3,7 +3,6 @@
 
 #include <boost/asio.hpp>
 
-using namespace boost;
 using namespace boost::asio::ip;
 
 #define PORT_NUM 8888

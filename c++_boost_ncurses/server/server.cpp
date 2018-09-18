@@ -11,6 +11,13 @@ int main()
 
 	tcp::acceptor acceptor(io, tcp::endpoint(tcp::v4(), PORT_NUM));
 
+	
+
+	return 0;
+}
+
+/* 
+
 	for(;;)
 	{
 		std::array<char, 256> mes;
@@ -26,5 +33,4 @@ int main()
 			asio::write(socket, asio::buffer(mes), er);
 	}
 
-	return 0;
-}
+ */

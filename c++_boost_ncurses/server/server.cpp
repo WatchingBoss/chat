@@ -73,6 +73,12 @@ disconnectClient(socket_ptr clSock)
 	std::cout << "Client disconnected. Total clients: " << clientList->size() << std::endl;
 }
 
+/* 
+ * TODO: Improve way to check new client's messages
+ * 1) Create thread for each client
+ * 2) Introduce coroutines and kick off a new coroutine for every new client connection
+ */
+
 void
 requesting()
 {

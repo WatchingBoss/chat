@@ -23,22 +23,9 @@ static mesQueue_ptr mesQueue(new std::queue<string_ptr>);
 static bool RUN_CHAT = true;
 /* END GLOBAL VARIABLES */
 
-static void
-sys_er(const char *er)
-{
-	std::cout << er << std::endl;
-	exit(EXIT_FAILURE);
-}
-
-static void
-sys_er(boost::system::error_code e_c)
-{
-	std::cout << "Code: " << e_c << "=> " << e_c.message() << std::endl;
-	exit(EXIT_FAILURE);
-}
-
-#define EXCEPT_HANDLE(x) \
-	try{x} catch(std::exception &e){std::cout << e.what() << std::endl; sys_er(er_code);}
+/* 
+ * TODO: Create ncurses TUI for client 
+ */
 
 static std::string *
 getNick()

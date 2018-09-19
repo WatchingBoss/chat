@@ -14,13 +14,15 @@ target_link_libraries( Boost INTERFACE
 target_include_directories( Boost INTERFACE ${BOOST_INC} )
 # END BOOST
 
+file( GLOB COMMON_S_H ${PROJECT_SOURCE_DIR}/common.hpp ${PROJECT_SOURCE_DIR}/common.cpp)
+
 file( GLOB SERVER_SOURCES ${PROJECT_SOURCE_DIR}/server/*cpp )
 file( GLOB SERVER_HEADERS ${PROJECT_SOURCE_DIR}/server/*hpp )
 file( GLOB CLIENT_SOURCES ${PROJECT_SOURCE_DIR}/client/*cpp )
 file( GLOB CLIENT_HEADERS ${PROJECT_SOURCE_DIR}/client/*hpp )
 
-add_executable( ${SERVER} ${SERVER_SOURCES} ${SERVER_HEADERS} )
+add_executable( ${SERVER} ${SERVER_SOURCES} ${SERVER_HEADERS} ${COMMON_S_H})
 target_link_libraries( ${SERVER} Boost )
 
-add_executable( ${CLIENT} ${CLIENT_SOURCES} ${CLIENT_HEADERS} )
+add_executable( ${CLIENT} ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${COMMON_S_H})
 target_link_libraries( ${CLIENT} Boost )

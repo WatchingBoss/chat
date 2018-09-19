@@ -30,6 +30,10 @@ static mesQueue_ptr mesQueue(new std::queue<client_map_ptr>);
 static bool RUN_SERVER = true;
 /* END GLOBAL VARIABLES */
 
+/* 
+TODO: Use boost::system::error_code in all posible boost funcs calls!
+ */
+
 void
 accepting(boost::asio::io_context *io, tcp::acceptor *acceptor)
 {
@@ -96,8 +100,10 @@ requesting()
 				if(clientSocket->available())
 				{
 					char readBuffer[bufferSize] = {0};
-					readBytes = clientSocket->
-						read_some(boost::asio::buffer(readBuffer, bufferSize), er_code);
+					EXCEPT_HANDLE(
+						readBytes = clientSocket->read_some(
+							boost::asio::buffer(readBuffer, bufferSize),
+							er_code); );
 					string_ptr mes(new std::string(readBuffer, readBytes));
 
 					if(clientSentExit(mes))
@@ -131,9 +137,10 @@ responsing()
 
 			mtx.lock();
 
-			for(socket_ptr &clSock : *clientList)
-				clSock->write_some(boost::asio::buffer(*(mes->begin()->second)));
-
+			EXCEPT_HANDLE(
+				for(socket_ptr &clSock : *clientList)
+					clSock->write_some(boost::asio::buffer(*(mes->begin()->second)),
+									   er_code); );
 			mesQueue->pop();
 
 			mtx.unlock();
@@ -160,22 +167,3 @@ int main()
 
 	return 0;
 }
-
-/* 
-
-	for(;;)
-	{
-		std::array<char, 256> mes;
-
-		tcp::socket socket(io);
-		acceptor.accept(socket);
-
-		system::error_code er;
-
-		size_t len = socket.read_some(asio::buffer(mes), er);
-
-		if(len)
-			asio::write(socket, asio::buffer(mes), er);
-	}
-
- */

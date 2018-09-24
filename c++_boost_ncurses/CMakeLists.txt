@@ -14,7 +14,8 @@ add_library( Boost INTERFACE )
 target_link_libraries( Boost INTERFACE
   ${BOOST_LIB}/libboost_system.a
   ${BOOST_LIB}/libboost_thread.a
-  -lpthread)
+  -lpthread
+  -lncurses)
 target_include_directories( Boost INTERFACE ${BOOST_INC} )
 # END BOOST
 

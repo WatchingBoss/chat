@@ -10,6 +10,7 @@
 #include <boost/asio.hpp>
 
 #include "../common.hpp"
+#include "tui.h"
 
 #define SERVER_NAME "192.168.43.122"
 #define DELAY 1000
@@ -135,6 +136,9 @@ int main()
 
 	tcp::socket socket(io);
 	connect_socket(socket, endpoint);
+
+	main_tui();
+
 	std::cout << "Welcome, " << *nickName << ", to chat" << std::endl;
 
 	threads.create_thread(boost::bind(readFromSocket, &socket));

@@ -10,25 +10,23 @@
 #include <boost/asio.hpp>
 
 #include "../common.hpp"
+#include "common.h"
 #include "tui.h"
 
 #define SERVER_NAME "192.168.43.122"
-#define DELAY 1000
-
-using string_ptr   = std::shared_ptr<std::string>;
-using mesQueue_ptr = std::shared_ptr< std::queue<string_ptr> >;
 
 /* GLOBAL VARIABLES */
 static boost::system::error_code er_code;
-static mesQueue_ptr mesQueue(new std::queue<string_ptr>);
-static bool RUN_CHAT = true;
+mesQueue_ptr mesQueue(new std::queue<string_ptr>);
+bool RUN_CHAT = true;
+string_ptr myNick(new std::string);
 /* END GLOBAL VARIABLES */
 
 /* 
  * TODO: Create ncurses TUI for client 
  */
 
-static std::string *
+static std::string
 getNick()
 {
 	std::string nick;
@@ -37,8 +35,7 @@ getNick()
 	if(nick.empty())
 		sys_er("getPrompt: cannot save nick_name");
 	std::transform(nick.begin(), nick.end(), nick.begin(), ::tolower);
-	std::string *prompt = new std::string(nick);
-	return prompt;
+	return nick;
 }
 
 static void
@@ -79,49 +76,29 @@ addTime(std::string &input)
 }
 
 static void
-writeToSocket(tcp::socket *socket, string_ptr nickName)
+writeToSocket(tcp::socket *socket)
 {
 	while(RUN_CHAT)
 	{
-		std::string userInput, inputBuffer;
-		std::getline(std::cin, userInput);
+		if(userInput->empty())
+			continue;
+		std::string inputBuffer;
 
-		inputBuffer = *nickName + ": " + userInput;
+		inputBuffer = *myNick + ": " + *userInput;
 		addTime(inputBuffer);
 
 		if(!inputBuffer.empty())
 			EXCEPT_HANDLE( socket->write_some(boost::asio::buffer(inputBuffer), er_code); );
 
-		if(userInput.find("exit") != std::string::npos)
+		if(userInput->find("exit") != std::string::npos)
 		{
-			std::cout << "Chat client terminated" << std::endl;
+			string_ptr term(new std::string("Chat terminating"));
+			mesQueue->push(term);
+			
 			RUN_CHAT = false;
 		}
-	}
-}
 
-inline bool
-ownMes(const string_ptr mes, string_ptr nick)
-{
-	if(mes->find(*nick) != std::string::npos)
-		return true;
-	return false;
-}
-
-static void
-displayChat(const string_ptr nick)
-{
-	while(RUN_CHAT)
-	{
-		if(!mesQueue->empty())
-		{
-			const string_ptr cur_mes = mesQueue->front();
-			if(!ownMes(cur_mes, nick))
-				std::cout << *cur_mes << std::endl;
-
-			mesQueue->pop();
-		}
-		boost::this_thread::sleep(boost::posix_time::millisec(DELAY));
+		userInput->clear();
 	}
 }
 
@@ -130,24 +107,23 @@ int main()
 	boost::thread_group threads;
 	boost::asio::io_context io;
 
-	string_ptr nickName(getNick());
+	myNick->assign(getNick());
 
 	tcp::endpoint endpoint(boost::asio::ip::address::from_string(SERVER_NAME), PORT_NUM);
 
 	tcp::socket socket(io);
 	connect_socket(socket, endpoint);
 
-	main_tui();
+	mesQueue->push((string_ptr)new std::string("Welcome to chat, " + *myNick));
 
-	std::cout << "Welcome, " << *nickName << ", to chat" << std::endl;
+	threads.create_thread(main_tui);
 
 	threads.create_thread(boost::bind(readFromSocket, &socket));
-	threads.create_thread(boost::bind(writeToSocket, &socket, nickName));
-	threads.create_thread(boost::bind(displayChat, nickName));
+	threads.create_thread(boost::bind(writeToSocket, &socket));
 
 	threads.join_all();
 
-	puts("Buy Buy!");
+	puts("Chat terminated\nBuy Buy!");
 
 	return 0;
 }

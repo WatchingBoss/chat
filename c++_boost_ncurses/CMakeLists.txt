@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.6)
 
 set( SERVER "server" )
 set( CLIENT "client" )
+if(!MSVC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wpedantic -Wno-long-long \
+-Wno-variadic-macros -fexceptions")
+endif()
 
 # BOOST
 set( BOOST_INC "/usr/local/include" )

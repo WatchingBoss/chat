@@ -7,6 +7,8 @@ if(!MSVC)
 -Wno-variadic-macros -fexceptions")
 endif()
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # BOOST
 set( BOOST_INC "/usr/local/include" )
 set( BOOST_LIB "/usr/local/lib/boost" )

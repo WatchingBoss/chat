@@ -78,14 +78,13 @@ static inline bool ownMes(const string_ptr mes, string_ptr nick) {
 }
 
 static void cleanWindow(WINDOW *win, const window_param &param) {
-	const int     height = param.height;
-	constexpr int width  = 100;
-	char          buffer[width];
+	const int height = param.height, bufferSize = param.width;
+	char      buffer[bufferSize];
 
-	memset(buffer, ' ', width);
+	memset(buffer, ' ', bufferSize);
 
-	for (int i = 1; i < param.height; ++i)
-		mvwaddnstr(win, height - i, 1, buffer, width);
+	for (int i = 1; i < height; ++i)
+		mvwaddnstr(win, height - i, 1, buffer, bufferSize);
 }
 
 /* 
@@ -96,29 +95,31 @@ void chat_display(WINDOW *win) {
 	int height = chat_display_param.height;
 
 	while (RUN_CHAT) {
-		if (!mesQueue->empty()) {
-			cleanWindow(win, chat_display_param);
+		if (mesQueue->empty()) continue;
 
-			int line = height - 1;
-			const size_t dispMesCount = displayedMes->size();
-			const string_ptr new_mes = mesQueue->front();
-			/* attron */
-			if (!ownMes(new_mes, myNick))
-				mvwaddnstr(win, line, 1, new_mes->c_str(),
-				           new_mes->length());
-			else
-				mvwaddnstr(win, line, 1, new_mes->c_str(),
-				           new_mes->length());
-			/* attroff */
-			if(dispMesCount)
-				for(const string_ptr &str : *displayedMes)
-					mvwaddnstr(win, ++line, 1, str->c_str(), str->length());
-			if (dispMesCount >= static_cast<size_t>(height))
-				displayedMes->pop_front();
+		int              line         = height - 1;
+		size_t           dispMesCount = 0;
+		const string_ptr new_mes      = mesQueue->front();
 
-			displayedMes->push_back(new_mes);
-			mesQueue->pop();
-		}
+		if (!displayedMes->empty()) dispMesCount = displayedMes->size();
+
+		cleanWindow(win, chat_display_param);
+
+		/* attron */
+		if (!ownMes(new_mes, myNick))
+			mvwaddnstr(win, line, 1, new_mes->c_str(), new_mes->length());
+		else
+			mvwaddnstr(win, line, 1, new_mes->c_str(), new_mes->length());
+		/* attroff */
+		if (dispMesCount)
+			for (const string_ptr &str : *displayedMes)
+				mvwaddnstr(win, ++line, 1, str->c_str(), str->length());
+		if (dispMesCount >= static_cast<size_t>(height))
+			displayedMes->pop_front();
+
+		displayedMes->push_back(new_mes);
+		mesQueue->pop();
+
 		wrefresh(win);
 		std::this_thread::sleep_for(std::chrono::milliseconds(DELAY));
 	}

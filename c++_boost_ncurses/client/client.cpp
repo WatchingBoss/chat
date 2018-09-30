@@ -123,7 +123,7 @@ int main()
 
 	threads.join_all();
 
-	puts("Chat terminated\nBuy Buy!");
+	std::puts("Chat terminated\nBuy Buy!");
 
 	return 0;
 }

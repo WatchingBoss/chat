@@ -16,8 +16,7 @@ add_library( Boost INTERFACE )
 target_link_libraries( Boost INTERFACE
   ${BOOST_LIB}/libboost_system.a
   ${BOOST_LIB}/libboost_thread.a
-  -lpthread
-  -lncurses)
+  -lpthread)
 target_include_directories( Boost INTERFACE ${BOOST_INC} )
 # END BOOST
 
@@ -32,4 +31,4 @@ add_executable( ${SERVER} ${SERVER_SOURCES} ${SERVER_HEADERS} ${COMMON_S_H})
 target_link_libraries( ${SERVER} Boost )
 
 add_executable( ${CLIENT} ${CLIENT_SOURCES} ${CLIENT_HEADERS} ${COMMON_S_H})
-target_link_libraries( ${CLIENT} Boost )
+target_link_libraries( ${CLIENT} Boost -lncurses)
